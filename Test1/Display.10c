@@ -1,0 +1,106 @@
+; --------------------------------------------
+; Title:   
+; Author:  Bobbias
+; Date:    4/30/2012
+; Version: 
+; --------------------------------------------
+
+; --------------------------------------------
+; Function: initialize_display
+; --------------------------------------------
+; Arguments:
+; x: holds display memory location
+; Returns:
+; none
+; --------------------------------------------
+:initialize_display				; Detection routine finished, loop or do more stuff here
+	set push, a				; preserve all registers
+	set push, b
+	set push, c
+	set push, i
+	set push, j
+	set push, x
+	set push, y
+	set push, z
+	
+	;I'd ike a better alternative to this line, because i shouldnt be using a hardcoded messsage, should I?
+	set i, BIOS_message			; letter counter
+	set j, [display_memory]		; start of video memory
+:_next_char
+	set a, [i]				; a = letter
+	ife a, 0x0000				; if next character is 0x0000
+		set pc, place_karet		; you're done, draw shit
+	bor a, 0x7000				; else, set foreground color for letter
+	set [j], a				; toss it to the memory location
+	add i, 1				; move to next char
+	add j, 1				; move to next video memo location
+	set pc, _next_char			; go to next char
+:place_karet
+	set [j],0x709f
+	jsr draw
+
+	set z, pop				; return to original state
+	set y, pop
+	set x, pop
+	set j, pop
+	set i, pop
+	set c, pop
+	set b, pop
+	set a, pop
+	set pc, pop				; return
+
+; --------------------------------------------
+; draw
+; --------------------------------------------
+; internal function only!
+; calling is done by moving pc into a,
+; setting PC to the next line of code after
+; the call manually, and pushing that to the
+; stack. a return is simply set pc, pop
+; --------------------------------------------
+:draw
+	set a, 0				; MEM_MAP_SCREEN mode
+	set b, [display_memory]		; address of memory to be used
+	hwi [display_address]			; send interrupt
+	set pc, pop
+
+; --------------------------------------------
+; Print method
+; --------------------------------------------
+; input:
+; a = start of string to print
+; 
+; --------------------------------------------
+:print_string
+	set push, a				; preserve all registers
+	set push, b
+	set push, c
+	set push, x
+	set push, y
+	set push, z
+
+	set i, a				; letter counter, starting location of string
+	set j, display_memory			; start of video memory
+:next_char
+	set a, [i]				; a = letter
+	ife a, 0x0000				; if next character is 0x0000
+		set pc, draw_karat		; you're done, draw shit
+	bor a, 0x7000				; else, set foreground color for letter
+	set [j], a				; toss it to the memory location
+	add i, 1				; move to next char
+	add j, 1				; move to next video memo location
+	set pc, next_char			; go to next char
+:draw_karat
+	set [j],0x709f
+	set a, pc
+	add a, 2
+	set push, a
+	set pc, draw
+
+	set z, pop				; return to original state
+	set y, pop
+	set x, pop
+	set c, pop
+	set b, pop
+	set a, pop
+	set pc, pop				; return

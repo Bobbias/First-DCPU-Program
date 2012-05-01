@@ -1,0 +1,12 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<project>
+  <name>Test1</name>
+  <files>
+    <file path="Test1.Main.10c" />
+    <file path="Display.10c" />
+    <file path="Keyboard.10c" />
+    <file path="Clock.10c" />
+    <file path="Compression.10c" />
+    <file path="InterruptHandler.10c" />
+  </files>
+</project>

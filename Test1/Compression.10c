@@ -1,0 +1,240 @@
+; --------------------------------------------
+; Title:   Compression
+; Author:  bungao
+; Date:    4/29/2012
+; Version: 
+; --------------------------------------------
+;this code is a test case
+;set a, text_uncompressed
+;set b, compress_to_here
+;JSR compress
+;SET A, compress_to_here
+;add b, 1
+;jsr decompress
+;sub pc, 1
+
+;compress
+;takes A as string start
+;takes B as compressed data stream start.
+;returns A as data streem length.
+;returns B compressed data stream end.
+; X - string pointer
+; Y - data stream pointer
+; I - nibble offset
+; J - character offset
+; Z - word buffer buffer
+;:compress
+;	SET PUSH, X
+;	SET PUSH, Y
+;	SET PUSH, I
+;	SET PUSH, J
+;	SET PUSH, Z
+;	SET PUSH, B
+;
+;	SET X, A ; set
+;	SET Y, B
+;
+;	SET I, 0 ; clear registers
+;	SET J, 0
+;	SET Z, 0
+;
+;:compress_loop
+;	SET A, [X]
+;	IFE A, 0x20
+;		SET PC, compress_space
+;	IFE A, 0 ; null character end compression
+;		SET PC, compress_end
+;	SUB A, 27  ; shift character
+;	DIV A, 14 ; work out character offset for this character
+;	IFN A, J
+;		JSR compress_charoffset
+;	SET A, [X]
+;	SUB A, 27
+;	SET B, J ; set b to charoffset,
+;	MUL B, 14
+;	SUB A, B ; sub a multiple of 14
+;	SHL A, I ; shift by nibble offset
+;	BOR Z, A ; add nibble to word buffer
+;	ADD X, 1 ; we have finished passing a character from the string, so increment string pointer
+;	ADD I, 0x4
+;	IFN I, 0x10
+;		SET PC, compress_loop
+;	SET [Y], Z ; we have filled a word with compressed data, so write it.
+;	SET Z, 0 ; clear word buffer
+;	ADD Y, 1
+;	SET I, 0x0 ; reset nibble offset back to 0
+;	SET PC, compress_loop
+;
+;:compress_space
+;	SET A, 0xe ; set A to space charater
+;	SHL A, I ; shift by nibble offset
+;	BOR Z, A ; add to word buffer
+;	ADD X, 1 ; we have finished passing the space from the string, so increment string pointer
+;	ADD I, 0x4
+;	IFN I, 0x10 ;
+;		SET PC, compress_loop ; if word buffer is not full go back and pass next character
+;	SET [Y], Z ; we have filled a word with compressed data, so write it.
+;	SET Z, 0 ; clear word buffer
+;	ADD Y, 1 ; inrement data stream pionter
+;	SET I, 0x0 ; reset nibble offset back to 0
+;	SET PC, compress_loop
+;
+;:compress_charoffset
+;	SET A, 0xf
+;	SHL A, I ; shift by nibble offset
+;	BOR Z, A ; add to word buffer
+;	ADD I, 0x4 ; shift nibble offset
+;	IFN I, 0x10
+;		SET PC, compress_charoffset1 ; if nibble offset is not 16bits continue to write new charater offset to stream
+;	SET [Y], Z ; if nibble offset is at 16bits word buffer is full, write word
+;	SET I, 0x0 ;reset nibble offset
+;	SET Z, 0 ;clear word buffer
+;	ADD Y, 1 ; increment data stream pointer
+;
+;:compress_charoffset1
+;	SET A, [X]
+;	IFG A, 0
+;	SUB A, 27
+;	DIV A, 14
+;	SET J, A
+;	SHL A, I ; shift by nibble offset
+;	BOR Z, A ; add to word buffer
+;	ADD I, 0x4 ; shift nibble offset
+;	IFN I, 0x10
+;		SET PC, POP ; if nibble offset is not 16bits continue on back to character passer
+;	SET [Y], Z ; if nibble offset is at 16bits word buffer is full, write word
+;	SET I, 0x0 ;reset nibble offset
+;	SET Z, 0 ;clear word buffer
+;	ADD Y, 1 ; increment data stream pointer
+;	SET PC, POP
+;
+;
+;
+;:compress_end
+;	JSR compress_charoffset ; set set char offset back to 0
+;	SET [Y], Z ; write last word.
+;	SET B, POP ; get back extraction start point
+;	SET A, Y   ; set a to end
+;	SUB A, B   ; sub start to get length
+;	SET B, Y
+;
+;	SET Z, POP
+;	SET J, POP
+;	SET I, POP
+;	SET Y, POP
+;	SET X, POP
+;	SET PC, POP
+;
+;decompress
+;takes A as data stream start location
+;takes B as extraction start location
+;returns A as length of extracted string
+;returns B as end of extrated string
+;:decompress
+;	SET PUSH, X
+;	SET PUSH, Y
+;	SET PUSH, I
+;	SET PUSH, J
+;	SET PUSH, Z
+;	SET PUSH, B
+;
+;
+;	SET X, A ; set up pionters takes A as data stream pointer
+;	SET Y, B ; takes b as extration start
+;
+;	SET I, 0 ; clear registers
+;	SET J, 0
+;	SET Z, 0
+;
+;
+;:decompress_loop
+;	SET A, [X] ;set a to location word
+;	SET B, 0xf ;
+;	SHL B, I	; shift B by nibble offset
+;
+;	AND B, A	; extract nibble
+;	SHR B, I	; shift B back
+;
+;	IFE B, 0xe
+;		SET PC, decompress_space
+;	IFE B, 0xF
+;		SET PC, decompress_charoffset
+;
+;	SET Z, J
+;	ADD Z, B
+;	IFE Z, 27 ; ascii esc found
+;		SET PC, decompress_end ; end decompression
+;	SET [Y], Z
+;	ADD Y, 1 ; advance extraction pointer
+;	ADD I, 0x4 ; move nibble offset
+;	IFN I, 0x10
+;		SET PC, decompress_loop
+;	ADD X, 1 ;advance next word
+;	SET I, 0 ; set nibble offset to 0
+;	SET PC, decompress_loop
+;
+;
+;:decompress_charoffset
+;	ADD I, 0x4
+;	IFE I, 0x10
+;		SET PC, decompress_charoffset_nw ; next word
+;
+;	SET B, 0xf ;
+;	SHL B, I	; shift B by nibble offset
+;
+;	AND B, A	; extract nibble
+;	SHR B, I	; shift B back
+;	MUL B, 14 ; multiply offset by 14
+;	ADD B, 27 ; add 27 back to offset
+;	SET J, B	; set charoffset
+;	ADD I, 0x4
+;	IFN I, 0x10
+;		SET PC, decompress_loop
+;	ADD X, 1 ;advance next word
+;	SET I, 0 ; set nibble offset to 0
+;	SET PC, decompress_loop
+;
+;
+;:decompress_charoffset_nw
+;	ADD X, 1 ; advance to next word
+;	SET I, 0 ; set nibble offset
+;
+;	SET A, [X] ;set a to location word
+;	SET B, 0xf ;
+;	AND B, A	; extract nibble
+;	SHL B, 0x4  ; shift nibble to 5-8 bits
+;	SET J, B
+;	SET I, 0x4
+;	SET PC, decompress_loop
+;
+;:decompress_space
+;	SET [Y], 0x20
+;	ADD Y, 1 ; advance extraction pointer
+;	ADD I, 0x4 ; move nibble offset
+;	IFN I, 0x10
+;		SET PC, decompress_loop
+;	ADD X, 1 ;advance next word
+;	SET I, 0 ; set nibble offset to 0
+;	SET PC, decompress_loop
+;
+;
+;:decompress_end
+;	SET [Y], 0 ; add null pointer to end of text.
+;	SET B, POP ; get original extration point
+;
+;	SUB Y, B ; get length
+;	SET A, Y ;return length
+;	ADD B, A
+;
+;	SET Z, POP
+;	SET J, POP
+;	SET I, POP
+;	SET Y, POP
+;	SET X, POP
+;	SET PC, POP
+;
+;:text_uncompressed
+;dat "On the other hand, we denounce with righteous indignation and dislike men who are so beguiled and demoralized by the charms of pleasure of the moment, so blinded by desire, that they cannot foresee the pain and trouble that are bound to ensue; and equal blame belongs to those who fail in their duty through weakness of will, which is the same as saying through shrinking from toil and pain. These cases are perfectly simple and easy to distinguish. In a free hour, when our power of choice is untrammelled and when nothing prevents our being able to do what we like best, every pleasure is to be welcomed and every pain avoided. But in certain circumstances and owing to the claims of duty or the obligations of business it will frequently occur that pleasures have to be repudiated and annoyances accepted. The wise man therefore always holds in these matters to this principle of selection: he rejects pleasures to secure other greater pleasures, or else he endures pains to avoid worse pains.", 0
+;:text_uncompressed_end
+;
+;:compress_to_here

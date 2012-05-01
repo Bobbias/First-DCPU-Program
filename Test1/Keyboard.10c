@@ -1,0 +1,98 @@
+; --------------------------------------------
+; Title:   
+; Author:  Bobbias
+; Date:    4/30/2012
+; Version: 
+; --------------------------------------------
+; This is wildly inefficient for a 3 line function lol
+:initialize_keyboard
+	set push, a				; preserve all registers
+	set push, b
+	set push, c
+	set push, i
+	set push, j
+	set push, x
+	set push, y
+	set push, z
+
+	set a, 3			; interrupt mode
+	set b, [keyboard_address]	; interrupt message = keyboard address+1
+	add b, 1			; so we never pass 0
+	hwi [keyboard_address]	; send
+	;todo create buffer for writing to the screen (and other uses!)
+	set z, pop
+	set y, pop
+	set x, pop
+	set j, pop
+	set i, pop
+	set c, pop
+	set b, pop
+	set a, pop
+	set pc, pop				; return
+; --------------------------------------------
+; Keyboard poll for interrupt
+; TODO: maye get rid of some of those registers being preserved.
+; --------------------------------------------
+:keyb_poll
+	set push, a				; preserve all registers
+	set push, b
+	set push, c
+	set push, x
+	set push, y
+	set push, z
+
+	set a, [interrupt_flags]		; grab the interrupt flags
+	and a, 0x0001				; without manglgin original, check if flag 0x0001
+	ife a, 0x0001				; is true, if so, we have a new key press
+		set pc, key_handler		; so we go handle the key press
+:kh_done
+	set z, pop
+	set y, pop
+	set x, pop
+	set c, pop
+	set b, pop
+	set a, pop
+	set pc, pop				; return
+
+:key_handler					; this is where we process new key press events
+	set a, 1				; we want the next key in the buffer
+	hwi [keyboard_address]		; we have to send this to get a response
+	ifl b, 0x007f				; b should now hold the pressed key
+	ifg b, 0x0020				; is it an ascii coded key?
+		jsr handle_ascii
+	jsr handle_control
+
+	set pc, kh_done
+
+:handle_ascii
+	set a, keyboard_buffer	; argument for print string
+	jsr print_string		; print the recently pressed button!
+	set pc, pop			; return to handler
+:handle_control
+	ife b, 0x10		; backspace
+	;todo: handle backspace functionality
+	ife b, 0x11		; return
+	;todo: handle new line functionality
+	ife b, 0x12		; insert
+	;todo (or not): handle insert functionality
+	ife b, 0x13		; delete
+	;todo: handle delete functionality
+	ife b, 0x80		; arrow up
+	;todo: handle arrow functionality
+	ife b, 0x81		; arrow down
+	;todo: handle arrow functionality
+	ife b, 0x82		; arrow left
+	;todo: handle arrow functionality
+	ife b, 0x83		; arrow right
+	;todo: handle arrow functionality
+	ife b, 0x90		; shift
+	;todo: handle shift
+	ife b, 0x91		; control
+	;todo: handle control
+	set pc, pop
+
+;DATA
+:keyboard_buffer
+dat 0x3000
+:kb_buff_length
+dat 0x0001

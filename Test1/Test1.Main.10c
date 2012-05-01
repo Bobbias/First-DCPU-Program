@@ -1,0 +1,77 @@
+; --------------------------------------------
+; Title:   Test1.Main
+; Author:  Bobbias
+; Date:    4/29/2012
+; Version: 0.01
+; --------------------------------------------
+; Description:
+; This program is a hand written hello-world
+; program targeted at the DCPU version 1.7.
+; --------------------------------------------
+; Before you can write anything to the screen, you have to ensure the screen is
+; connected. This checks to see if the screen is connected, and also detects
+; other hardware (Namely the clock and the keyboard.)
+; --------------------------------------------
+; notes on the future of this project:
+; the idea is to create a game loader
+; with an API accessable from external code which is 
+; physically added to the game loader code
+; before being run in an emulator
+;
+; a game, or collection of games, depending on what can fit given the size of this loader
+; would be added on to the end of the precompiled loader (this) binary
+; the loader would boot the system and check for games present
+; it would then present the user with a menu of the games attached to the loader
+; when the user selects a game, it looks up the entry point of the game and loads the game
+;
+; the games will not have to handle things such as keyboard interrupts
+; as the loader will handle that for them. they may also make use of drawing functions
+; built in to the loader
+
+	ias interrupt_handler			; set IA to interrupt_handler address
+						; this code is triggered every time interrupts are detected
+	hwn i					; Get the list of attached hardware
+	set j, 0				; Count
+:loop
+	hwq j					; Step 1: Get info
+	ife a, 0xf615				; If not monitor... 
+		set pc, display_detected
+	ife a, 0x7406				; or keyboard...
+		set pc, keyboard_detected
+	ife a, 0xb402				; or clock...
+		set pc, clock_detected
+:continue
+	add j, 1				; Count++
+	ife j, i				; When finished iterating
+		;set pc, initialize_display	; Start setting up the display routine
+		set pc, inf_loop		; test for new display initialization routine
+	set pc, loop				; not finished, keep looping
+
+:display_detected
+	set [display_address], j		; set the address
+	jsr initialize_display		; maybe place call to initialize the display here
+	set pc, continue			; then continue finding stuff
+:keyboard_detected
+	set [keyboard_address], j		; set the address
+	jsr initialize_keyboard		; maybe place call to initialize the keyboard here
+	set pc, continue			; then continue finding stuff
+:clock_detected
+	set [clock_address], y		; set the address
+	; maybe place call to initalize the clock here
+	set pc, continue			; then continue finding stuff
+
+:inf_loop
+	set pc, inf_loop
+; Data
+:display_address
+DAT 0x2000
+:display_memory
+DAT 0x8000
+:keyboard_address
+DAT 0x2001
+:clock_address
+DAT 0x2002
+:interrupt_flags
+DAT 0x0000
+:BIOS_message
+DAT "BobBIOS Booting...", 0x0000

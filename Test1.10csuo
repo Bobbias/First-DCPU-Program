@@ -1,0 +1,10 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<solution name="Test1" path="C:\Users\Bobbias\Documents\0x10c Devkit\Test1\Test1.10csln" currentFile="Test1\Test1.Main.10c">
+  <openFiles>
+    <file path="Test1\Test1.Main.10c" />
+    <file path="Test1\Display.10c" />
+    <file path="Test1\Keyboard.10c" />
+    <file path="Test1\Clock.10c" />
+    <file path="Test1\Compression.10c" />
+  </openFiles>
+</solution>

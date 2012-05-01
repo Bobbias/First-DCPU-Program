@@ -1,0 +1,21 @@
+; --------------------------------------------
+; Title:   
+; Author:  Bobbias
+; Date:    5/1/2012
+; Version: 
+; --------------------------------------------
+:interrupt_handler
+	sub a, 1	; we use HW+1, so sub it to check which HW it is
+	ife a, [keyboard_address]
+		set pc, keyboard_interrupt
+	ife a, [clock_address]
+		set pc, clock_interrupt
+:interrupts_finished
+	RFI 0
+
+:keyboard_interrupt
+	bor [interrupt_flags], 0x0001
+	set pc, interrupts_finished	;return
+:clock_interrupt
+;todo
+	set pc, interrupts_finished	;return

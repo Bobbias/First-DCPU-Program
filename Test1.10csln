@@ -1,0 +1,7 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<solution>
+  <name>Test1</name>
+  <projects>
+    <project path="Test1\Test1.10cproj" />
+  </projects>
+</solution>
