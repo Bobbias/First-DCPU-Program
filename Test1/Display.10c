@@ -9,9 +9,9 @@
 ; Function: initialize_display
 ; --------------------------------------------
 ; Arguments:
-; x: holds display memory location
+; X: holds display memory location
 ; Returns:
-; none
+; [chars_written]: holds the number of characters written
 ; --------------------------------------------
 :initialize_display				; Detection routine finished, loop or do more stuff here
 	set push, a					; preserve all registers
@@ -26,6 +26,7 @@
 	;I'd ike a better alternative to this line, because i shouldnt be using a hardcoded messsage, should I?
 	set i, BIOS_message			; letter counter
 	set j, [display_memory]		; start of video memory
+	set [chars_written], 0		; count=0
 :_next_char
 	set a, [i]					; a = letter
 	ife a, 0x0000				; if next character is 0x0000
@@ -34,6 +35,7 @@
 	set [j], a					; toss it to the memory location
 	add i, 1					; move to next char
 	add j, 1					; move to next video memo location
+	add [chars_written], 1		; count++
 	set pc, _next_char			; go to next char
 :place_karet
 	set [j],0x709f
@@ -67,9 +69,10 @@
 ; --------------------------------------------
 ; Print method
 ; --------------------------------------------
-; input:
-; a = start of string to print
-; 
+; Input:
+; A = start of string to print
+; Output:
+; [chars_written]: holds the number of characters written
 ; --------------------------------------------
 :print_string
 	set push, a					; preserve registers
@@ -79,19 +82,21 @@
 	set push, y
 	set push, z
 
-	set i, a					; letter counter, starting location of string
-	set j, [display_memory]		; start of video memory
+	set x, a					; letter counter, starting location of string
+	set y, [display_memory]		; start of video memory
+	set [chars_written], 0		; clear chars_written every flush
 :next_char
-	set a, [i]					; a = letter
+	set a, [x]					; a = letter
 	ife a, 0x0000				; if next character is 0x0000
 		set pc, draw_karat		; you're done, draw shit
 	bor a, 0x7000				; else, set foreground color for letter
-	set [j], a					; toss it to the memory location
-	add i, 1					; move to next char
-	add j, 1					; move to next video memo location
+	set [y], a					; toss it to the memory location
+	add x, 1					; move to next char
+	add y, 1					; move to next video memo location
+	add [chars_written], 1		; counter++
 	set pc, next_char			; go to next char
 :draw_karat
-	set [j],0x709f
+	set [y],0x709f
 	jsr draw
 
 	set z, pop					; return to original state
@@ -101,3 +106,6 @@
 	set b, pop
 	set a, pop
 	set pc, pop					; return
+	
+:chars_written
+DAT 0x0000
