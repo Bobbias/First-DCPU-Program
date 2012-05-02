@@ -28,12 +28,12 @@
 ; as the loader will handle that for them. they may also make use of drawing functions
 ; built in to the loader
 
-	ias interrupt_handler			; set IA to interrupt_handler address
-						; this code is triggered every time interrupts are detected
-	hwn i					; Get the list of attached hardware
-	set j, 0				; Count
+	ias interrupt_handler		; set IA to interrupt_handler address
+								; this code is triggered every time interrupts are detected
+	hwn i						; Get the list of attached hardware
+	set j, 0					; Count
 :loop
-	hwq j					; Step 1: Get info
+	hwq j						; Step 1: Get info
 	ife a, 0xf615				; If not monitor... 
 		set pc, display_detected
 	ife a, 0x7406				; or keyboard...
@@ -41,27 +41,30 @@
 	ife a, 0xb402				; or clock...
 		set pc, clock_detected
 :continue
-	add j, 1				; Count++
-	ife j, i				; When finished iterating
-		;set pc, initialize_display	; Start setting up the display routine
+	add j, 1					; Count++
+	ife j, i					; When finished iterating
 		set pc, inf_loop		; test for new display initialization routine
 	set pc, loop				; not finished, keep looping
 
 :display_detected
-	set [display_address], j		; set the address
-	jsr initialize_display		; maybe place call to initialize the display here
+	set [display_address], j	; set the address
+	jsr initialize_display		; place call to initialize the display here
 	set pc, continue			; then continue finding stuff
 :keyboard_detected
-	set [keyboard_address], j		; set the address
-	jsr initialize_keyboard		; maybe place call to initialize the keyboard here
+	set [keyboard_address], j	; set the address
+	jsr initialize_keyboard		; place call to initialize the keyboard here
 	set pc, continue			; then continue finding stuff
 :clock_detected
 	set [clock_address], y		; set the address
-	; maybe place call to initalize the clock here
+								; place call to initalize the clock here
 	set pc, continue			; then continue finding stuff
 
+; For now, this loop also polls for keyboard input.
+; the call does NOT preserve I or J
 :inf_loop
+	jsr keyb_poll
 	set pc, inf_loop
+
 ; Data
 :display_address
 DAT 0x2000

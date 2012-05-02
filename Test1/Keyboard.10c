@@ -15,10 +15,10 @@
 	set push, y
 	set push, z
 
-	set a, 3			; interrupt mode
-	set b, [keyboard_address]	; interrupt message = keyboard address+1
-	add b, 1			; so we never pass 0
-	hwi [keyboard_address]	; send
+	;set a, 3			; interrupt mode
+	;set b, [keyboard_address]	; interrupt message = keyboard address+1
+	;add b, 1			; so we never pass 0
+	;hwi [keyboard_address]	; send
 	;todo create buffer for writing to the screen (and other uses!)
 	set z, pop
 	set y, pop
@@ -41,9 +41,10 @@
 	set push, y
 	set push, z
 
-	set a, [interrupt_flags]		; grab the interrupt flags
-	and a, 0x0001				; without manglgin original, check if flag 0x0001
-	ife a, 0x0001				; is true, if so, we have a new key press
+	; This commented section will only work when there are working interrupts
+;	set a, [interrupt_flags]	; grab the interrupt flags
+;	and a, 0x0001				; without manglgin original, check if flag 0x0001
+;	ife a, 0x0001				; is true, if so, we have a new key press
 		set pc, key_handler		; so we go handle the key press
 :kh_done
 	set z, pop
@@ -52,47 +53,55 @@
 	set c, pop
 	set b, pop
 	set a, pop
-	set pc, pop				; return
+	set pc, pop					; return
 
 :key_handler					; this is where we process new key press events
-	set a, 1				; we want the next key in the buffer
+	set a, 1					; we want the next key in the buffer
 	hwi [keyboard_address]		; we have to send this to get a response
-	ifl b, 0x007f				; b should now hold the pressed key
-	ifg b, 0x0020				; is it an ascii coded key?
-		jsr handle_ascii
-	jsr handle_control
+	ifn c, 0x0000				; C holds the key, is it non-zero?
+	ifl c, 0x007f				; is it less than the max ascii key?
+	ifg c, 0x0020				; more than the minimum ascii key?
+		jsr handle_ascii		; then its an ascii key.
+	ifn c, 0x0000				; if it's non-zero
+	ifg c, 0x007f				; greater than the max ascii key
+	ifl c, 0x0020				; or less than the minimum ascii key
+		jsr handle_control		; it's a control key instead
 
 	set pc, kh_done
 
 :handle_ascii
-	set a, keyboard_buffer	; argument for print string
-	jsr print_string		; print the recently pressed button!
-	set pc, pop			; return to handler
+	set [keyboard_buffer], c	; keyboard biffer holds the letter
+	set a, keyboard_buffer		; argument for print string
+	jsr print_string			; print the recently pressed button!
+	set pc, pop					; return to handler
 :handle_control
-	ife b, 0x10		; backspace
+	ife c, 0x10				; backspace
 	;todo: handle backspace functionality
-	ife b, 0x11		; return
-	;todo: handle new line functionality
-	ife b, 0x12		; insert
+	ife c, 0x11				; return
+		; placeholder for real usage
+		set [keyboard_buffer], 0x0020
+		set a, keyboard_buffer
+		jsr print_string
+	ife c, 0x12				; insert
 	;todo (or not): handle insert functionality
-	ife b, 0x13		; delete
+	ife c, 0x13				; delete
 	;todo: handle delete functionality
-	ife b, 0x80		; arrow up
+	ife c, 0x80				; arrow up
 	;todo: handle arrow functionality
-	ife b, 0x81		; arrow down
+	ife c, 0x81				; arrow down
 	;todo: handle arrow functionality
-	ife b, 0x82		; arrow left
+	ife c, 0x82				; arrow left
 	;todo: handle arrow functionality
-	ife b, 0x83		; arrow right
+	ife c, 0x83				; arrow right
 	;todo: handle arrow functionality
-	ife b, 0x90		; shift
+	ife c, 0x90				; shift
 	;todo: handle shift
-	ife b, 0x91		; control
+	ife c, 0x91				; control
 	;todo: handle control
 	set pc, pop
 
 ;DATA
 :keyboard_buffer
-dat 0x3000
+dat 0x3000, 0x0000
 :kb_buff_length
 dat 0x0001
