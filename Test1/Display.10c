@@ -15,18 +15,13 @@
 ; --------------------------------------------
 :initialize_display				; Detection routine finished, loop or do more stuff here
 	set push, a					; preserve all registers
-	set push, b
-	set push, c
 	set push, i
 	set push, j
-	set push, x
-	set push, y
-	set push, z
 	
 	;I'd ike a better alternative to this line, because i shouldnt be using a hardcoded messsage, should I?
 	set i, BIOS_message			; letter counter
 	set j, [display_memory]		; start of video memory
-	set [chars_written], 1		; count=0
+	set [chars_written], 0		; count=0
 :_next_char
 	set a, [i]					; a = letter
 	ife a, 0x0000				; if next character is 0x0000
@@ -39,15 +34,12 @@
 	set pc, _next_char			; go to next char
 :place_karet
 	set [j],0x709f
+	ifg j, [farthest_drawn]
+		set [farthest_drawn], j
 	jsr draw
 
-	set z, pop					; return to original state
-	set y, pop
-	set x, pop
-	set j, pop
+	set j, pop					; return to original state
 	set i, pop
-	set c, pop
-	set b, pop
 	set a, pop
 	set pc, pop					; return
 
@@ -122,14 +114,9 @@
 ; later on.
 ; --------------------------------------------
 :clear_screen
-	set push, a					; preserve registers
-	set push, b
-	set push, c
-	set push, x
-	set push, y
-	set push, z
+	set push, a						; preserve registers
+	set a, [display_memory]			; start our program counting at the beginning of display mem
 :clearing
-	set a, display_memory			; start our program counting at the beginning of display mem
 	set [a], 0x0000					; zero out first word
 	ife a, [farthest_drawn]			; if farthest
 		set pc, screen_cleared		; your done
@@ -137,17 +124,12 @@
 	set pc, clearing				; loop
 :screen_cleared
 	set [farthest_drawn], 0x0000
-	set z, pop						; return to original state
-	set y, pop
-	set x, pop
-	set c, pop
-	set b, pop
-	set a, pop
-	set pc, pop					; return
+	set a, pop						; bring back original register
+	set pc, pop						; return
 	
-:chars_written					; last_write command only
+:chars_written						; last write command only
 DAT 0x0000
-:cursor_position				; cursor position
+:cursor_position					; cursor position
 DAT 0x0000
 :farthest_drawn
 DAT 0x0000
