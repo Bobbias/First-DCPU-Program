@@ -80,7 +80,7 @@
 	set push, z
 
 	set i, a					; letter counter, starting location of string
-	set j, display_memory		; start of video memory
+	set j, [display_memory]		; start of video memory
 :next_char
 	set a, [i]					; a = letter
 	ife a, 0x0000				; if next character is 0x0000
