@@ -49,6 +49,7 @@
 :display_detected
 	set [display_address], j	; set the address
 	jsr initialize_display		; place call to initialize the display here
+	jsr clear_screen
 	set pc, continue			; then continue finding stuff
 :keyboard_detected
 	set [keyboard_address], j	; set the address

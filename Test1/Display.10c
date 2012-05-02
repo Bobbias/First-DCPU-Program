@@ -97,6 +97,8 @@
 	set pc, next_char			; go to next char
 :draw_karat
 	set [y],0x709f
+	ifg y, [farthest_drawn]
+		set [farthest_drawn], y
 	jsr draw
 
 	set z, pop					; return to original state
@@ -107,10 +109,45 @@
 	set a, pop
 	set pc, pop					; return
 	
-:clear_screen	
+; --------------------------------------------
+; clear_screen method
+; --------------------------------------------
+; Input:
+; none
+; Output:
+; none
+; --------------------------------------------
+; The clear_screen method as of now will always clear at least the first cell.
+; That's not a big deal if the screen is always clear, but it could be a problem
+; later on.
+; --------------------------------------------
+:clear_screen
+	set push, a					; preserve registers
+	set push, b
+	set push, c
+	set push, x
+	set push, y
+	set push, z
+:clearing
+	set a, display_memory			; start our program counting at the beginning of display mem
+	set [a], 0x0000					; zero out first word
+	ife a, [farthest_drawn]			; if farthest
+		set pc, screen_cleared		; your done
+	add a, 1						; move to next cell
+	set pc, clearing				; loop
+:screen_cleared
+	set [farthest_drawn], 0x0000
+	set z, pop						; return to original state
+	set y, pop
+	set x, pop
+	set c, pop
+	set b, pop
+	set a, pop
+	set pc, pop					; return
 	
-	
-:chars_written
+:chars_written					; last_write command only
 DAT 0x0000
-:cursor_position
+:cursor_position				; cursor position
+DAT 0x0000
+:farthest_drawn
 DAT 0x0000
